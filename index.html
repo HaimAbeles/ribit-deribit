@@ -155,18 +155,18 @@
             { name: "S&P 500", value: "^GSPC", requiresDollarConversion: true },
             { name: "Nasdaq", value: "^IXIC", requiresDollarConversion: true },
             { name: "Dow Jones", value: "^DJI", requiresDollarConversion: true },
-			{ name: "Russell 2000", value: "^RUT", requiresDollarConversion: true },
+            { name: "Russell 2000", value: "^RUT", requiresDollarConversion: true },
             { name: "ת''א 35", value: "TA35.TA", requiresDollarConversion: false },
             { name: "ת''א 90", value: "TA90.TA", requiresDollarConversion: false },
             { name: "ת''א 125", value: "^TA125.TA", requiresDollarConversion: false },
-			{ name: "S&P 500 X2", value: "SSO", requiresDollarConversion: true },
+            { name: "S&P 500 X2", value: "SSO", requiresDollarConversion: true },
             { name: "Nasdaq X2", value: "QLD", requiresDollarConversion: true },
             { name: "Dow Jones X2", value: "DDM", requiresDollarConversion: true },
-			{ name: "Russell 2000", value: "UWM", requiresDollarConversion: true },
-			{ name: "S&P 500 X3", value: "UPRO", requiresDollarConversion: true },
+            { name: "Russell 2000", value: "UWM", requiresDollarConversion: true },
+            { name: "S&P 500 X3", value: "UPRO", requiresDollarConversion: true },
             { name: "Nasdaq X3", value: "TQQQ", requiresDollarConversion: true },
             { name: "Dow Jones X3", value: "UDOW", requiresDollarConversion: true },
-			{ name: "Russell 2000", value: "URTY", requiresDollarConversion: true },
+            { name: "Russell 2000", value: "URTY", requiresDollarConversion: true },
         ];
 
         const indexSelect = document.getElementById("indexSelect");
@@ -320,7 +320,7 @@
 
             try {
                 const response = await fetch(
-                    `https://ribit-deribit-server.onrender.com/api/calculate?index=${selectedIndex.value}&startDate=${startDate}&endDate=${endDate}&monthlyDeposit=${monthlyDeposit}&initialDeposit=${initialDeposit}&depositDay=${depositDay}&managementFee=${managementFeePercentage}&requiresDollarConversion=${requiresDollarConversion}`
+                    `https://server-ribit-deribit.onrender.com/api/calculate?index=${selectedIndex.value}&startDate=${startDate}&endDate=${endDate}&monthlyDeposit=${monthlyDeposit}&initialDeposit=${initialDeposit}&depositDay=${depositDay}&managementFee=${managementFeePercentage}&requiresDollarConversion=${requiresDollarConversion}`
                 );
                 const data = await response.json();
 
@@ -337,7 +337,7 @@
                     <div>סה"כ דמי ניהול ששולמו: <span class="bold">${formatNumber(data.withoutDollarConversion.totalFees)} ש"ח</span></div>
                     `;
 
-					document.getElementById("resultWithDollar").innerHTML = `
+                document.getElementById("resultWithDollar").innerHTML = `
 						<h2>תוצאות עם התחשבות בשער הדולר</h2>
 						<div>סה"כ סכום כולל לאחר דמי ניהול: <span class="bold">${formatNumber(data.withDollarConversion.totalAmountAfterFees)} ש"ח</span></div>
 						<div>תשואה כוללת של התקופה: <span class="bold">${data.withDollarConversion.indexTotalReturn}%</span></div>
