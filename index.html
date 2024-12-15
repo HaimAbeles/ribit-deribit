@@ -311,7 +311,7 @@
 
             try {
                 const response = await fetch(
-                    `http://localhost:3000/api/calculate?index=${selectedIndex.value}&startDate=${startDate}&endDate=${endDate}&monthlyDeposit=${monthlyDeposit}&initialDeposit=${initialDeposit}&depositDay=${depositDay}&managementFee=${managementFeePercentage}&requiresDollarConversion=${requiresDollarConversion}`
+                    `https://server-ribit-deribit.onrender.com/api/calculate?index=${selectedIndex.value}&startDate=${startDate}&endDate=${endDate}&monthlyDeposit=${monthlyDeposit}&initialDeposit=${initialDeposit}&depositDay=${depositDay}&managementFee=${managementFeePercentage}&requiresDollarConversion=${requiresDollarConversion}`
                 );
                 const data = await response.json();
 
