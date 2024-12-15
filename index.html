@@ -330,7 +330,7 @@
                 const afterTaxWithDollar = (parseFloat(data.withDollarConversion.totalProfit) * 0.75 + parseFloat(data.withDollarConversion.totalPrincipal)).toFixed(2);
 
                 document.getElementById("resultWithoutDollar").innerHTML = `
-                    <h2>תוצאות ללא התחשבות בשער הדולר</h2>
+                    <h3>תוצאות ללא התחשבות בשער הדולר</h3>
                     <div>סה"כ סכום כולל לאחר דמי ניהול: <span class="bold">${formatNumber(data.withoutDollarConversion.totalAmountAfterFees)} ש"ח</span></div>
                     <div>תשואה כוללת של התקופה: <span class="bold">${data.withoutDollarConversion.indexTotalReturn}%</span></div>
                     <div>סה"כ סכום לאחר מס: <span class="bold">${afterTaxWithoutDollar} ש"ח</span></div>
@@ -340,14 +340,14 @@
                     `;
 
                 document.getElementById("resultWithDollar").innerHTML = `
-						<h2>תוצאות עם התחשבות בשער הדולר</h2>
-						<div>סה"כ סכום כולל לאחר דמי ניהול: <span class="bold">${formatNumber(data.withDollarConversion.totalAmountAfterFees)} ש"ח</span></div>
-						<div>תשואה כוללת של התקופה: <span class="bold">${data.withDollarConversion.indexTotalReturn}%</span></div>
-						<div>סה"כ סכום לאחר מס: <span class="bold">${afterTaxWithDollar} ש"ח</span></div>
-						<div>סה"כ קרן: <span class="bold">${formatNumber(data.withDollarConversion.totalPrincipal)} ש"ח</span></div>
-						<div>סה"כ רווח: <span class="bold">${formatNumber(data.withDollarConversion.totalProfit)} ש"ח</span></div>
-						<div>סה"כ דמי ניהול ששולמו: <span class="bold">${formatNumber(data.withDollarConversion.totalFees)} ש"ח</span></div>
-					`;
+			<h3>תוצאות עם התחשבות בשער הדולר</h3>
+			<div>סה"כ סכום כולל לאחר דמי ניהול: <span class="bold">${formatNumber(data.withDollarConversion.totalAmountAfterFees)} ש"ח</span></div>
+			<div>תשואה כוללת של התקופה: <span class="bold">${data.withDollarConversion.indexTotalReturn}%</span></div>
+			<div>סה"כ סכום לאחר מס: <span class="bold">${afterTaxWithDollar} ש"ח</span></div>
+			<div>סה"כ קרן: <span class="bold">${formatNumber(data.withDollarConversion.totalPrincipal)} ש"ח</span></div>
+			<div>סה"כ רווח: <span class="bold">${formatNumber(data.withDollarConversion.totalProfit)} ש"ח</span></div>
+			<div>סה"כ דמי ניהול ששולמו: <span class="bold">${formatNumber(data.withDollarConversion.totalFees)} ש"ח</span></div>
+		`;
 
             } catch (error) {
                 console.error("שגיאה בחישוב:", error);
