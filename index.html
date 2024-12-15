@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="he">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מחשבון תשואה היסטורית</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
+    <style>
+        body {
+            font-family: 'Assistant', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            direction: rtl;
+            text-align: right;
+            background-color: #000;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0055ff;
+            margin-bottom: 20px;
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        label,
+        input,
+        select,
+        button {
+            display: block;
+            width: 100%;
+            margin-top: 15px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #0055ff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0040cc;
+            box-shadow: 0 8px 20px rgba(0, 64, 204, 0.4);
+        }
+
+        .result-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            gap: 20px;
+        }
+
+        .result {
+            flex: 1;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: #f9f9f9;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .result h3 {
+            text-align: center;
+            color: #0055ff;
+            margin-bottom: 15px;
+        }
+
+        .result div {
+            margin-bottom: 10px;
+        }
+
+        .bold {
+            font-weight: bold;
+            color: #0055ff;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="background"></canvas>
+
+    <div class="container">
+        <h1>מחשבון תשואה היסטורית</h1>
+        <label for="indexSelect">בחר מדד:</label>
+        <select id="indexSelect"></select>
+        <label for="startDate">תאריך התחלה:</label>
+        <input type="text" id="startDate" placeholder="בחר תאריך התחלה" required>
+        <div class="error" id="startDateError"></div>
+        <label for="endDate">תאריך סיום:</label>
+        <input type="text" id="endDate" placeholder="בחר תאריך סיום" required>
+        <div class="error" id="endDateError"></div>
+        <label for="monthlyDeposit">הפקדה חודשית:</label>
+        <input type="number" id="monthlyDeposit" placeholder="הזן סכום הפקדה חודשית" required>
+        <label for="initialDeposit">הפקדה חד פעמית:</label>
+        <input type="number" id="initialDeposit" placeholder="הזן סכום הפקדה חד פעמית (אם יש)" required>
+        <label for="depositDay">תאריך הפקדה חודשי (1-31):</label>
+        <input type="number" id="depositDay" placeholder="1" value="1" min="1" max="31" required>
+        <label for="managementFee">דמי ניהול מצבירה (באחוזים):</label>
+        <input type="number" id="managementFee" placeholder="הזן דמי ניהול באחוזים (לדוגמה, 0.8)" required>
+        <label for="useImages">השתמש בתמונות:</label>
+        <input type="checkbox" id="useImages">
+        <button onclick="calculate()">חשב</button>
+        <div class="result-container" id="result-container">
+            <div class="result" id="resultWithDollar">
+                <h3>נתונים עם המרה לשער הדולר</h3>
+            </div>
+            <div class="result" id="resultWithoutDollar">
+                <h3>נתונים ללא המרה לשער הדולר</h3>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+    <script>
+        const indices = [
+            { name: "S&P 500", value: "^GSPC", requiresDollarConversion: true },
+            { name: "Nasdaq", value: "^IXIC", requiresDollarConversion: true },
+            { name: "Dow Jones", value: "^DJI", requiresDollarConversion: true },
+            { name: "ת''א 35", value: "TA35.TA", requiresDollarConversion: false },
+            { name: "ת''א 90", value: "TA90.TA", requiresDollarConversion: false },
+            { name: "ת''א 125", value: "^TA125.TA", requiresDollarConversion: false },
+        ];
+
+        const indexSelect = document.getElementById("indexSelect");
+        indices.forEach(index => {
+            const option = document.createElement("option");
+            option.value = index.value;
+            option.textContent = index.name;
+            indexSelect.appendChild(option);
+        });
+
+        const startDatePicker = new Pikaday({
+            field: document.getElementById('startDate'),
+            format: 'DD/MM/YYYY',
+            i18n: {
+                previousMonth: 'חודש קודם',
+                nextMonth: 'חודש הבא',
+                months: ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'],
+                weekdays: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'],
+                weekdaysShort: ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש']
+            },
+            onSelect: function () {
+                const date = startDatePicker.getDate();
+                document.getElementById('startDate').value = moment(date).format('DD/MM/YYYY');
+            }
+        });
+
+        const endDatePicker = new Pikaday({
+            field: document.getElementById('endDate'),
+            format: 'DD/MM/YYYY',
+            i18n: {
+                previousMonth: 'חודש קודם',
+                nextMonth: 'חודש הבא',
+                months: ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'],
+                weekdays: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'],
+                weekdaysShort: ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש']
+            },
+            onSelect: function () {
+                const date = endDatePicker.getDate();
+                document.getElementById('endDate').value = moment(date).format('DD/MM/YYYY');
+            }
+        });
+
+        function validateDates() {
+            const startDate = moment(document.getElementById("startDate").value, "DD/MM/YYYY");
+            const endDate = moment(document.getElementById("endDate").value, "DD/MM/YYYY");
+            const today = moment();
+
+            let isValid = true;
+
+            if (!startDate.isValid() || startDate.isAfter(today)) {
+                document.getElementById("startDateError").innerText = "תאריך ההתחלה לא תקין או אחרי התאריך של היום.";
+                isValid = false;
+            } else {
+                document.getElementById("startDateError").innerText = "";
+            }
+
+            if (!endDate.isValid() || endDate.isBefore(startDate) || endDate.isAfter(today)) {
+                document.getElementById("endDateError").innerText = "תאריך הסיום לא תקין או לפני תאריך ההתחלה.";
+                isValid = false;
+            } else {
+                document.getElementById("endDateError").innerText = "";
+            }
+
+            return isValid;
+        }
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("background"), alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        function createParticles(useImages) {
+            const particleGeometry = new THREE.BufferGeometry();
+            const particleCount = 1000;
+            const positions = [];
+            const velocities = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                positions.push((Math.random() - 0.5) * 20);
+                positions.push((Math.random() - 0.5) * 20);
+                positions.push((Math.random() - 0.5) * 10);
+                velocities.push((Math.random() - 0.5) * 0.02);
+                velocities.push((Math.random() - 0.5) * 0.02);
+                velocities.push((Math.random() - 0.5) * 0.02);
+            }
+
+            particleGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+            particleGeometry.setAttribute("velocity", new THREE.Float32BufferAttribute(velocities, 3));
+
+            const particleMaterial = useImages
+                ? new THREE.PointsMaterial({
+                    map: new THREE.TextureLoader().load("data:image/png;base64,..."), // Replace with your image
+                    size: 0.3,
+                    transparent: true,
+                })
+                : new THREE.PointsMaterial({
+                    color: 0x0055ff,
+                    size: 0.1,
+                });
+
+            const particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+
+            return { particleGeometry, velocities };
+        }
+
+        let particlesInstance = createParticles(false);
+
+        function animate() {
+            const positions = particlesInstance.particleGeometry.attributes.position.array;
+            const velocities = particlesInstance.particleGeometry.attributes.velocity.array;
+
+            for (let i = 0; i < positions.length; i += 3) {
+                positions[i] += velocities[i];
+                positions[i + 1] += velocities[i + 1];
+                positions[i + 2] += velocities[i + 2];
+
+                if (positions[i] > 10 || positions[i] < -10) velocities[i] = -velocities[i];
+                if (positions[i + 1] > 10 || positions[i + 1] < -10) velocities[i + 1] = -velocities[i + 1];
+                if (positions[i + 2] > 5 || positions[i + 2] < -5) velocities[i + 2] = -velocities[i + 2];
+            }
+
+            particlesInstance.particleGeometry.attributes.position.needsUpdate = true;
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        document.getElementById("useImages").addEventListener("change", (e) => {
+            scene.clear();
+            particlesInstance = createParticles(e.target.checked);
+        });
+
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+
+        async function calculate() {
+            if (!validateDates()) return;
+
+            const selectedIndex = indices.find(i => i.value === document.getElementById("indexSelect").value);
+            const requiresDollarConversion = selectedIndex.requiresDollarConversion;
+            const startDate = moment(document.getElementById("startDate").value, "DD/MM/YYYY").format("YYYY-MM-DD");
+            const endDate = moment(document.getElementById("endDate").value, "DD/MM/YYYY").format("YYYY-MM-DD");
+            const monthlyDeposit = parseFloat(document.getElementById("monthlyDeposit").value) || 0;
+            const initialDeposit = parseFloat(document.getElementById("initialDeposit").value) || 0;
+            const depositDay = parseInt(document.getElementById("depositDay").value) || 1;
+            const managementFeePercentage = parseFloat(document.getElementById("managementFee").value) || 0;
+
+            try {
+                const response = await fetch(
+                    `http://localhost:3000/api/calculate?index=${selectedIndex.value}&startDate=${startDate}&endDate=${endDate}&monthlyDeposit=${monthlyDeposit}&initialDeposit=${initialDeposit}&depositDay=${depositDay}&managementFee=${managementFeePercentage}&requiresDollarConversion=${requiresDollarConversion}`
+                );
+                const data = await response.json();
+
+                const afterTaxWithoutDollar = (parseFloat(data.withoutDollarConversion.totalProfit) * 0.75 + parseFloat(data.withoutDollarConversion.totalPrincipal)).toFixed(2);
+                const afterTaxWithDollar = (parseFloat(data.withDollarConversion.totalProfit) * 0.75 + parseFloat(data.withDollarConversion.totalPrincipal)).toFixed(2);
+
+                document.getElementById("resultWithoutDollar").innerHTML = `
+                    <h2>תוצאות ללא התחשבות בשער הדולר</h2>
+                    <div>סה"כ סכום כולל לאחר דמי ניהול: <span class="bold">${formatNumber(data.withoutDollarConversion.totalAmountAfterFees)} ש"ח</span></div>
+                    <div>תשואה כוללת של התקופה: <span class="bold">${data.withoutDollarConversion.indexTotalReturn}%</span></div>
+                    <div>סה"כ סכום לאחר מס: <span class="bold">${afterTaxWithoutDollar} ש"ח</span></div>
+                    <div>סה"כ קרן: <span class="bold">${formatNumber(data.withoutDollarConversion.totalPrincipal)} ש"ח</span></div>
+                    <div>סה"כ רווח: <span class="bold">${formatNumber(data.withoutDollarConversion.totalProfit)} ש"ח</span></div>
+                    <div>סה"כ דמי ניהול ששולמו: <span class="bold">${formatNumber(data.withoutDollarConversion.totalFees)} ש"ח</span></div>
+                    `;
+
+                document.getElementById("resultWithDollar").innerHTML = `
+                    <h2>תוצאות עם התחשבות בשער הדולר</h2>
+                    <div>סה"כ סכום כולל לאחר דמי ניהול: <span class="bold">${formatNumber(data.withDollarConversion.totalAmountAfterFees)} ש"ח</span></div>
+                    <div>תשואה כוללת של התקופה: <span class="bold">${data.withDollarConversion.indexTotalReturn}%</span></div>
+                    <div>סה"כ סכום לאחר מס: <span class="bold">${afterTaxWithDollar} ש"ח</span></div>
+                    <div>סה"כ קרן: <span class="bold">${formatNumber(data.withDollarConversion.totalPrincipal)} ש"ח</span></div>
+                    <div>סה"כ רווח: <span class="bold">${formatNumber(data.withDollarConversion.totalProfit)} ש"ח</span></div>
+                    <div>סה"כ דמי ניהול ששולמו: <span class="bold">${formatNumber(data.withDollarConversion.totalFees)} ש"ח</span></div>
+                `;
+
+            } catch (error) {
+                console.error("שגיאה בחישוב:", error);
+                document.getElementById("result").innerHTML = "שגיאה בשליפת הנתונים.";
+            }
+        }
+
+        function formatNumber(value) {
+            return parseFloat(value).toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+    </script>
+</body>
+
+</html>
